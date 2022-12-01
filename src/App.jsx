@@ -1,68 +1,137 @@
-import React, { useState } from 'react';
+import React, {lazy, useEffect, useState} from 'react';
 import {
-  AppstoreOutlined,
-  ContainerOutlined,
   DesktopOutlined,
-  MailOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
+  FileOutlined,
   PieChartOutlined,
+  TeamOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
-import { Button, Menu } from 'antd';
-function getItem(label, key, icon, children, type) {
+import { Breadcrumb, Layout, Menu } from 'antd';
+import './index.css'
+import AppRoute from "./router/AppRoute";
+import {useLocation, withRouter} from "react-router-dom";
+
+
+const { Header, Content, Footer, Sider } = Layout;
+function getItem(label, key, icon, children) {
   return {
     key,
     icon,
     children,
     label,
-    type,
   };
 }
 const items = [
-  getItem('Option 1', '1', <PieChartOutlined />),
-  getItem('Option 2', '2', <DesktopOutlined />),
-  getItem('Option 3', '3', <ContainerOutlined />),
-  getItem('Navigation One', 'sub1', <MailOutlined />, [
-    getItem('Option 5', '5'),
-    getItem('Option 6', '6'),
-    getItem('Option 7', '7'),
-    getItem('Option 8', '8'),
-  ]),
-  getItem('Navigation Two', 'sub2', <AppstoreOutlined />, [
-    getItem('Option 9', '9'),
-    getItem('Option 10', '10'),
-    getItem('Submenu', 'sub3', null, [getItem('Option 11', '11'), getItem('Option 12', '12')]),
+  getItem('主页', '/home', <PieChartOutlined />),
+  getItem('用户', '/user', <DesktopOutlined />),
+  getItem('信息', '/info', <UserOutlined />),
+  getItem('人员', '/person', <TeamOutlined />),
+  getItem('工具', 'util', <TeamOutlined />,[
+    getItem('first', '/util/first'),
+    getItem('second', '/util/second'),
+    getItem('third', '/util/third'),
   ]),
 ];
-const App = () => {
+const App = (props) => {
   const [collapsed, setCollapsed] = useState(false);
-  const toggleCollapsed = () => {
-    setCollapsed(!collapsed);
-  };
+  const [defaultSelectedKeys, setDefaultSelectedKeys]=useState(['/home']);
+  // 设置刷新的时候menu selectedKeys
+  const [selectedKeys, setSelectedKeys] = useState([]);
+  // 设置菜单展开下标
+  const [openKeys, setOpenKeys] = useState([])
+  let location = useLocation();
+
+
+  useEffect(()=>{
+    if(location.pathname === '/') {
+      props.history.push('/home')
+    }
+    setSelectedKeys([location.pathname])
+  },[location.pathname])
+
+  useEffect(()=>{
+    if(location.pathname.split('/').length > 1){
+    const menuSub = getOpenKey();
+    setOpenKeys([menuSub?.key])
+    }
+  },[])
+
+
+  // 获取有展开页的key
+  const getOpenKey = ()=> {
+    let index = 0
+    while (index < items.length) {
+      if (items[index] && items[index].key !== location.pathname) {
+        if (items[index].children &&items[index].children.length ) {
+          console.log('children',items[index].children );
+          const findIndex = items[index].children.findIndex(item => item.key === location.pathname);
+          console.log('findIndex', findIndex);
+          if (findIndex !== -1) return items[index];
+        }
+      }
+      index++;
+    }
+  }
+
+
+  const menuClick = (e)=>{
+    props.history.push(e.key, {title: '100'})
+  }
+
+
   return (
-    <div
+    <Layout
       style={{
-        width: 256,
+        minHeight: '100vh',
       }}
     >
-      <Button
-        type="primary"
-        onClick={toggleCollapsed}
-        style={{
-          marginBottom: 16,
-        }}
-      >
-        {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-      </Button>
-      <Menu
-        defaultSelectedKeys={['1']}
-        defaultOpenKeys={['sub1']}
-        mode="inline"
-        theme="dark"
-        inlineCollapsed={collapsed}
-        items={items}
-      />
-    </div>
+      <Sider collapsible collapsed={collapsed} onCollapse={(value) => setCollapsed(value)}>
+        <div className="logo" />
+        <Menu theme="dark"
+              defaultSelectedKeys={defaultSelectedKeys}
+              selectedKeys={selectedKeys}
+              onOpenChange={(openKeys) => {
+                setOpenKeys(openKeys);
+              }}
+              openKeys={openKeys}
+              mode="inline"
+              items={items}
+              onClick={menuClick} />
+      </Sider>
+      <Layout className="site-layout">
+        <Header
+          className="site-layout-background"
+          style={{
+            padding: 0,
+          }}
+        />
+        <Content
+          style={{
+            margin: '0 16px',
+          }}
+        >
+          <div
+            className="site-layout-background"
+            style={{
+              padding: 24,
+              // minHeight: 360,
+            }}
+          >
+
+            <AppRoute />
+
+
+          </div>
+        </Content>
+        <Footer
+          style={{
+            textAlign: 'center',
+          }}
+        >
+          Ant Design ©2018 Created by Ant UED
+        </Footer>
+      </Layout>
+    </Layout>
   );
 };
-export default App;
+export default withRouter(App);
